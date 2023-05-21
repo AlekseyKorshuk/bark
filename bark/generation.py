@@ -983,13 +983,11 @@ def generate_coarse_stream(
                 x_in = torch.cat((x_in, item_next[None]), dim=1)
                 del logits, relevant_logits, probs, item_next
                 n_step += 1
-
+            del x_in
             if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
                 print(x_coarse_in)
-                gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in, x_coarse_history)
-                yield gen_coarse_audio_arr
-
-            del x_in
+                # gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in, x_coarse_history)
+                # yield gen_coarse_audio_arr
 
         del x_semantic_in
     _clear_cuda_cache()
