@@ -130,8 +130,8 @@ def generate_audio(
 def generate_audio_stream(
         text: str,
         history_prompt: Optional[Union[Dict, str]] = None,
-        text_temp: float = 0.7,
-        waveform_temp: float = 0.7,
+        text_temp: float = 1.0,
+        waveform_temp: float = 1.0,
         silent: bool = False,
 ):
     counter = 0
