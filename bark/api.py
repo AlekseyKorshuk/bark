@@ -113,7 +113,6 @@ def generate_audio(
         temp=text_temp,
         silent=silent,
     )
-    print("x_semantic baseline", semantic_tokens)
     out = semantic_to_waveform(
         semantic_tokens,
         history_prompt=history_prompt,
@@ -144,7 +143,6 @@ def generate_audio_stream(
         temp=text_temp,
         silent=silent,
     )
-    print("x_semantic stream", x_semantic)
     previous_coarse_size = 0
     fine_tokens = None
     for coarse_tokens in generate_coarse_stream(
