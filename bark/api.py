@@ -141,9 +141,6 @@ def generate_audio_stream(
         temp=text_temp,
         silent=silent,
     )
-    print("x_semantic", x_semantic)
-
-    final_audio_arr = []
     previous_coarse_size = 0
     fine_tokens = None
     for coarse_tokens in generate_coarse_stream(
@@ -165,9 +162,9 @@ def generate_audio_stream(
             fine_tokens = batch_fine_tokens
         else:
             fine_tokens = np.concatenate([fine_tokens, batch_fine_tokens], axis=1)
-        audio_arr = codec_decode(batch_fine_tokens)
-        write_wav(f"bark_generation_{counter}.wav", SAMPLE_RATE, audio_arr)
-        counter += 1
+        # audio_arr = codec_decode(batch_fine_tokens)
+        # write_wav(f"bark_generation_{counter}.wav", SAMPLE_RATE, audio_arr)
+        # counter += 1
     audio_arr = codec_decode(fine_tokens)
     write_wav(f"bark_generation_merged.wav", SAMPLE_RATE, audio_arr)
     final_fine_tokens = generate_fine(

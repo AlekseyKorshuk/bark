@@ -674,7 +674,6 @@ def generate_coarse(
                 x_in = torch.cat((x_in, item_next[None]), dim=1)
                 del logits, relevant_logits, probs, item_next
                 n_step += 1
-            print("YIELD", x_coarse_in)
 
             del x_in
         del x_semantic_in
@@ -985,7 +984,6 @@ def generate_coarse_stream(
                 n_step += 1
             if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
                 gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in, x_coarse_history)
-                print("YIELD", gen_coarse_audio_arr)
                 yield gen_coarse_audio_arr
 
             del x_in
