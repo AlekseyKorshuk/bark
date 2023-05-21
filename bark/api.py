@@ -60,6 +60,7 @@ def semantic_to_waveform(
         silent=silent,
         use_kv_caching=True
     )
+    print("coarse_tokens from baseline", coarse_tokens)
     fine_tokens = generate_fine(
         coarse_tokens,
         history_prompt=history_prompt,
@@ -86,12 +87,12 @@ def save_as_prompt(filepath, full_generation):
 
 
 def generate_audio(
-    text: str,
-    history_prompt: Optional[Union[Dict, str]] = None,
-    text_temp: float = 0.7,
-    waveform_temp: float = 0.7,
-    silent: bool = False,
-    output_full: bool = False,
+        text: str,
+        history_prompt: Optional[Union[Dict, str]] = None,
+        text_temp: float = 0.7,
+        waveform_temp: float = 0.7,
+        silent: bool = False,
+        output_full: bool = False,
 ):
     """Generate audio array from input text.
 
@@ -172,4 +173,5 @@ def generate_audio_stream(
         temp=0.5,
     )
     final_audio_arr = codec_decode(final_fine_tokens)
+    print("coarse_tokens from stream", coarse_tokens)
     return final_audio_arr
