@@ -88,8 +88,8 @@ def save_as_prompt(filepath, full_generation):
 def generate_audio(
         text: str,
         history_prompt: Optional[Union[Dict, str]] = None,
-        text_temp: float = 0.7,
-        waveform_temp: float = 0.7,
+        text_temp: float = 1.0,
+        waveform_temp: float = 1.0,
         silent: bool = False,
         output_full: bool = False,
 ):
@@ -167,11 +167,11 @@ def generate_audio_stream(
         # write_wav(f"bark_generation_{counter}.wav", SAMPLE_RATE, audio_arr)
         # counter += 1
     audio_arr = codec_decode(fine_tokens)
-    # write_wav(f"bark_generation_merged.wav", SAMPLE_RATE, audio_arr)
-    # final_fine_tokens = generate_fine(
-    #     coarse_tokens,
-    #     history_prompt=history_prompt,
-    #     temp=0.5,
-    # )
-    # final_audio_arr = codec_decode(final_fine_tokens)
-    return audio_arr
+    write_wav(f"bark_generation_merged.wav", SAMPLE_RATE, audio_arr)
+    final_fine_tokens = generate_fine(
+        coarse_tokens,
+        history_prompt=history_prompt,
+        temp=0.5,
+    )
+    final_audio_arr = codec_decode(final_fine_tokens)
+    return final_audio_arr
