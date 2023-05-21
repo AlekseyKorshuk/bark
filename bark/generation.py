@@ -994,8 +994,6 @@ def generate_coarse_stream(
 
 def prepare_coarse_out(x_coarse_in, x_coarse_history):
     np_x_coarse_in = x_coarse_in.detach().cpu().numpy().squeeze()
-    # if np_x_coarse_in.shape == ():
-    #     np_x_coarse_in = np.array([np_x_coarse_in])
     gen_coarse_arr = np_x_coarse_in[len(x_coarse_history):]
     gen_coarse_audio_arr = gen_coarse_arr.reshape(-1, N_COARSE_CODEBOOKS).T - SEMANTIC_VOCAB_SIZE
     for n in range(1, N_COARSE_CODEBOOKS):
