@@ -986,8 +986,10 @@ def generate_coarse_stream(
             del x_in
             if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
                 print(x_coarse_in)
-                # gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in, x_coarse_history)
-                # yield gen_coarse_audio_arr
+                x_coarse_in_copy = x_coarse_in.detach().clone()
+                x_coarse_history_copy = x_coarse_history.detach().clone()
+                gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history_copy)
+                yield gen_coarse_audio_arr
 
         del x_semantic_in
     _clear_cuda_cache()
