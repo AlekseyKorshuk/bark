@@ -86,12 +86,12 @@ def save_as_prompt(filepath, full_generation):
 
 
 def generate_audio(
-        text: str,
-        history_prompt: Optional[Union[Dict, str]] = None,
-        text_temp: float = 1.0,
-        waveform_temp: float = 1.0,
-        silent: bool = False,
-        output_full: bool = False,
+    text: str,
+    history_prompt: Optional[Union[Dict, str]] = None,
+    text_temp: float = 0.7,
+    waveform_temp: float = 0.7,
+    silent: bool = False,
+    output_full: bool = False,
 ):
     """Generate audio array from input text.
 
@@ -130,9 +130,10 @@ def generate_audio(
 def generate_audio_stream(
         text: str,
         history_prompt: Optional[Union[Dict, str]] = None,
-        text_temp: float = 1.0,
-        waveform_temp: float = 1.0,
+        text_temp: float = 0.7,
+        waveform_temp: float = 0.7,
         silent: bool = False,
+        output_full: bool = False,
         sliding_window_len: int = 60
 ):
     x_semantic = text_to_semantic(

@@ -523,23 +523,23 @@ COARSE_INFER_TOKEN = 12_050
 
 
 def generate_coarse(
-        x_semantic,
-        history_prompt=None,
-        temp=0.7,
-        top_k=None,
-        top_p=None,
-        silent=False,
-        max_coarse_history=630,  # min 60 (faster), max 630 (more context)
-        sliding_window_len=60,
-        use_kv_caching=False,
+    x_semantic,
+    history_prompt=None,
+    temp=0.7,
+    top_k=None,
+    top_p=None,
+    silent=False,
+    max_coarse_history=630,  # min 60 (faster), max 630 (more context)
+    sliding_window_len=60,
+    use_kv_caching=False,
 ):
     """Generate coarse audio codes from semantic tokens."""
     assert (
-            isinstance(x_semantic, np.ndarray)
-            and len(x_semantic.shape) == 1
-            and len(x_semantic) > 0
-            and x_semantic.min() >= 0
-            and x_semantic.max() <= SEMANTIC_VOCAB_SIZE - 1
+        isinstance(x_semantic, np.ndarray)
+        and len(x_semantic.shape) == 1
+        and len(x_semantic) > 0
+        and x_semantic.min() >= 0
+        and x_semantic.max() <= SEMANTIC_VOCAB_SIZE - 1
     )
     assert 60 <= max_coarse_history <= 630
     assert max_coarse_history + sliding_window_len <= 1024 - 256
@@ -550,21 +550,21 @@ def generate_coarse(
         x_semantic_history = history_prompt["semantic_prompt"]
         x_coarse_history = history_prompt["coarse_prompt"]
         assert (
-                isinstance(x_semantic_history, np.ndarray)
-                and len(x_semantic_history.shape) == 1
-                and len(x_semantic_history) > 0
-                and x_semantic_history.min() >= 0
-                and x_semantic_history.max() <= SEMANTIC_VOCAB_SIZE - 1
-                and isinstance(x_coarse_history, np.ndarray)
-                and len(x_coarse_history.shape) == 2
-                and x_coarse_history.shape[0] == N_COARSE_CODEBOOKS
-                and x_coarse_history.shape[-1] >= 0
-                and x_coarse_history.min() >= 0
-                and x_coarse_history.max() <= CODEBOOK_SIZE - 1
-                and (
-                        round(x_coarse_history.shape[-1] / len(x_semantic_history), 1)
-                        == round(semantic_to_coarse_ratio / N_COARSE_CODEBOOKS, 1)
-                )
+            isinstance(x_semantic_history, np.ndarray)
+            and len(x_semantic_history.shape) == 1
+            and len(x_semantic_history) > 0
+            and x_semantic_history.min() >= 0
+            and x_semantic_history.max() <= SEMANTIC_VOCAB_SIZE - 1
+            and isinstance(x_coarse_history, np.ndarray)
+            and len(x_coarse_history.shape) == 2
+            and x_coarse_history.shape[0] == N_COARSE_CODEBOOKS
+            and x_coarse_history.shape[-1] >= 0
+            and x_coarse_history.min() >= 0
+            and x_coarse_history.max() <= CODEBOOK_SIZE - 1
+            and (
+                round(x_coarse_history.shape[-1] / len(x_semantic_history), 1)
+                == round(semantic_to_coarse_ratio / N_COARSE_CODEBOOKS, 1)
+            )
         )
         x_coarse_history = _flatten_codebooks(x_coarse_history) + SEMANTIC_VOCAB_SIZE
         # trim histories correctly
@@ -608,10 +608,10 @@ def generate_coarse(
         x_coarse_in = torch.from_numpy(x_coarse)[None].to(device)
         n_window_steps = int(np.ceil(n_steps / sliding_window_len))
         n_step = 0
-        for _ in tqdm.tqdm(range(n_window_steps), total=n_window_steps, disable=silent, desc="generate_coarse"):
+        for _ in tqdm.tqdm(range(n_window_steps), total=n_window_steps, disable=silent):
             semantic_idx = base_semantic_idx + int(round(n_step / semantic_to_coarse_ratio))
             # pad from right side
-            x_in = x_semantic_in[:, np.max([0, semantic_idx - max_semantic_history]):]
+            x_in = x_semantic_in[:, np.max([0, semantic_idx - max_semantic_history]) :]
             x_in = x_in[:, :256]
             x_in = F.pad(
                 x_in,
@@ -639,10 +639,10 @@ def generate_coarse(
 
                 logits, kv_cache = model(x_input, use_cache=use_kv_caching, past_kv=kv_cache)
                 logit_start_idx = (
-                        SEMANTIC_VOCAB_SIZE + (1 - int(is_major_step)) * CODEBOOK_SIZE
+                    SEMANTIC_VOCAB_SIZE + (1 - int(is_major_step)) * CODEBOOK_SIZE
                 )
                 logit_end_idx = (
-                        SEMANTIC_VOCAB_SIZE + (2 - int(is_major_step)) * CODEBOOK_SIZE
+                    SEMANTIC_VOCAB_SIZE + (2 - int(is_major_step)) * CODEBOOK_SIZE
                 )
                 relevant_logits = logits[0, 0, logit_start_idx:logit_end_idx]
                 if top_p is not None:
@@ -674,12 +674,11 @@ def generate_coarse(
                 x_in = torch.cat((x_in, item_next[None]), dim=1)
                 del logits, relevant_logits, probs, item_next
                 n_step += 1
-
             del x_in
         del x_semantic_in
     if OFFLOAD_CPU:
         model.to("cpu")
-    gen_coarse_arr = x_coarse_in.detach().cpu().numpy().squeeze()[len(x_coarse_history):]
+    gen_coarse_arr = x_coarse_in.detach().cpu().numpy().squeeze()[len(x_coarse_history) :]
     del x_coarse_in
     assert len(gen_coarse_arr) == n_steps
     gen_coarse_audio_arr = gen_coarse_arr.reshape(-1, N_COARSE_CODEBOOKS).T - SEMANTIC_VOCAB_SIZE
