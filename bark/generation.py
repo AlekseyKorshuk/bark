@@ -838,7 +838,7 @@ def generate_coarse_stream(
         top_p=0.75,
         silent=False,
         max_coarse_history=630,  # min 60 (faster), max 630 (more context)
-        sliding_window_len=1,
+        sliding_window_len=60,
         use_kv_caching=False,
 ):
     """Generate coarse audio codes from semantic tokens."""
