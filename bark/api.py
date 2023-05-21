@@ -4,7 +4,7 @@ import numpy as np
 from scipy.io.wavfile import write as write_wav
 
 from .generation import codec_decode, generate_coarse, generate_fine, generate_text_semantic, \
-    generate_text_semantic_stream, SAMPLE_RATE, generate_coarse_stream
+    SAMPLE_RATE, generate_coarse_stream
 
 
 def text_to_semantic(
