@@ -133,8 +133,8 @@ def generate_audio_stream(
         text_temp: float = 1.0,
         waveform_temp: float = 1.0,
         silent: bool = False,
+        sliding_window_len: int = 60
 ):
-    counter = 0
     x_semantic = text_to_semantic(
         text,
         history_prompt=history_prompt,
@@ -148,7 +148,8 @@ def generate_audio_stream(
             history_prompt=history_prompt,
             temp=waveform_temp,
             silent=silent,
-            use_kv_caching=True
+            use_kv_caching=True,
+            sliding_window_len=sliding_window_len
     ):
         coarse_tokens = np.array(coarse_tokens)
         coarse_tokens_cropped = coarse_tokens[:, previous_coarse_size:]
