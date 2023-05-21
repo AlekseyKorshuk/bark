@@ -527,7 +527,7 @@ def generate_coarse(
         history_prompt=None,
         temp=0.7,
         top_k=None,
-        top_p=0.75,
+        top_p=None,
         silent=False,
         max_coarse_history=630,  # min 60 (faster), max 630 (more context)
         sliding_window_len=60,
@@ -835,7 +835,7 @@ def generate_coarse_stream(
         history_prompt=None,
         temp=0.7,
         top_k=None,
-        top_p=0.75,
+        top_p=None,
         silent=False,
         max_coarse_history=630,  # min 60 (faster), max 630 (more context)
         sliding_window_len=60,
