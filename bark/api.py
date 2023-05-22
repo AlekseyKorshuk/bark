@@ -4,7 +4,7 @@ import numpy as np
 from scipy.io.wavfile import write as write_wav
 
 from .generation import codec_decode, generate_coarse, generate_fine, generate_text_semantic, \
-    SAMPLE_RATE, generate_coarse_stream
+    SAMPLE_RATE, generate_coarse_stream, _inference_mode
 
 
 def text_to_semantic(
@@ -137,37 +137,38 @@ def generate_audio_stream(
         output_full: bool = False,
         sliding_window_len: int = 60
 ):
-    x_semantic = text_to_semantic(
-        text,
-        history_prompt=history_prompt,
-        temp=text_temp,
-        silent=silent,
-    )
-    previous_coarse_size = 0
-    for coarse_tokens in generate_coarse_stream(
-            x_semantic,
+    with _inference_mode():
+        x_semantic = text_to_semantic(
+            text,
             history_prompt=history_prompt,
-            temp=waveform_temp,
+            temp=text_temp,
             silent=silent,
-            use_kv_caching=True,
-            sliding_window_len=sliding_window_len
-    ):
-        coarse_tokens = np.array(coarse_tokens)
-        coarse_tokens_cropped = coarse_tokens[:, previous_coarse_size:]
-        previous_coarse_size = coarse_tokens.shape[1]
-        batch_fine_tokens = generate_fine(
-            coarse_tokens_cropped,
-            history_prompt=history_prompt,
-            temp=0.5,
         )
-        audio_arr = codec_decode(batch_fine_tokens)
-        if output_full:
-            full_generation = {
-                "semantic_prompt": x_semantic,
-                "coarse_tokens": coarse_tokens,
-                "coarse_tokens_cropped": coarse_tokens_cropped,
-                "batch_fine_tokens": batch_fine_tokens,
-            }
-            yield full_generation, audio_arr
-        else:
-            yield audio_arr
+        previous_coarse_size = 0
+        for coarse_tokens in generate_coarse_stream(
+                x_semantic,
+                history_prompt=history_prompt,
+                temp=waveform_temp,
+                silent=silent,
+                use_kv_caching=True,
+                sliding_window_len=sliding_window_len
+        ):
+            coarse_tokens = np.array(coarse_tokens)
+            coarse_tokens_cropped = coarse_tokens[:, previous_coarse_size:]
+            previous_coarse_size = coarse_tokens.shape[1]
+            batch_fine_tokens = generate_fine(
+                coarse_tokens_cropped,
+                history_prompt=history_prompt,
+                temp=0.5,
+            )
+            audio_arr = codec_decode(batch_fine_tokens)
+            if output_full:
+                full_generation = {
+                    "semantic_prompt": x_semantic,
+                    "coarse_tokens": coarse_tokens,
+                    "coarse_tokens_cropped": coarse_tokens_cropped,
+                    "batch_fine_tokens": batch_fine_tokens,
+                }
+                yield full_generation, audio_arr
+            else:
+                yield audio_arr

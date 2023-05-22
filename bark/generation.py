@@ -434,7 +434,7 @@ def generate_text_semantic(
         ]).astype(np.int64)
     )[None]
     assert x.shape[1] == 256 + 256 + 1
-    with _inference_mode():
+    with None:
         x = x.to(device)
         n_tot_steps = 768
         # custom tqdm updates since we don't know when eos will occur
@@ -603,7 +603,7 @@ def generate_coarse(
     x_semantic = np.hstack([x_semantic_history, x_semantic]).astype(np.int32)
     x_coarse = x_coarse_history.astype(np.int32)
     base_semantic_idx = len(x_semantic_history)
-    with _inference_mode():
+    with None:
         x_semantic_in = torch.from_numpy(x_semantic)[None].to(device)
         x_coarse_in = torch.from_numpy(x_coarse)[None].to(device)
         n_window_steps = int(np.ceil(n_steps / sliding_window_len))
@@ -760,7 +760,7 @@ def generate_fine(
         )
     # we can be lazy about fractional loop and just keep overwriting codebooks
     n_loops = np.max([0, int(np.ceil((x_coarse_gen.shape[1] - (1024 - n_history)) / 512))]) + 1
-    with _inference_mode():
+    with None:
         in_arr = torch.tensor(in_arr.T).to(device)
         for n in tqdm.tqdm(range(n_loops), disable=silent, desc="generate_fine"):
             start_idx = np.min([n * 512, in_arr.shape[0] - 1024])
@@ -912,8 +912,7 @@ def generate_coarse_stream(
     x_semantic = np.hstack([x_semantic_history, x_semantic]).astype(np.int32)
     x_coarse = x_coarse_history.astype(np.int32)
     base_semantic_idx = len(x_semantic_history)
-    skip_first = True
-    with _inference_mode():
+    with None:
         x_semantic_in = torch.from_numpy(x_semantic)[None].to(device)
         x_coarse_in = torch.from_numpy(x_coarse)[None].to(device)
         n_window_steps = int(np.ceil(n_steps / sliding_window_len))
@@ -991,9 +990,7 @@ def generate_coarse_stream(
                 x_coarse_in_copy = x_coarse_in.detach().clone()
                 gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history)
                 print("after:", x_coarse_in)
-                if not skip_first:
-                    yield np.copy(gen_coarse_audio_arr)
-            skip_first = False
+                yield np.copy(gen_coarse_audio_arr)
 
         del x_semantic_in
     _clear_cuda_cache()
