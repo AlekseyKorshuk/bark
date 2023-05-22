@@ -1169,7 +1169,6 @@ def generate_stream_combined(
             x_coarse_gen = coarse_tokens[:, previous_coarse_size:]
             # from here
 
-
             previous_coarse_size = coarse_tokens.shape[1]
             assert (
                     isinstance(x_coarse_gen, np.ndarray)
@@ -1246,7 +1245,7 @@ def generate_stream_combined(
                             fine_probs = fine_probs.to("cpu")
                         codebook_preds = torch.hstack(
                             [
-                                torch.multinomial(fine_probs[nnn], num_samples=1).to(inf_device)
+                                torch.multinomial(fine_probs[nnn].copy(), num_samples=1).to(inf_device)
                                 for nnn in range(rel_start_fill_idx, 1024)
                             ]
                         )
@@ -1268,8 +1267,6 @@ def generate_stream_combined(
             #     gen_fine_arr = gen_fine_arr[:, :-n_remove_from_end]
             # assert gen_fine_arr.shape[-1] == x_coarse_gen.shape[-1]
             # _clear_cuda_cache()
-
-
 
             # yield gen_fine_arr
             yield []
