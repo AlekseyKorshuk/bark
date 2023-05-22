@@ -164,7 +164,7 @@ if torch.cuda.is_available():
 
 @contextlib.contextmanager
 def _inference_mode():
-    with InferenceContext(), torch.inference_mode(), torch.no_grad():
+    with torch.inference_mode(), torch.no_grad():
         yield
 
 
