@@ -1167,104 +1167,110 @@ def generate_stream_combined(
             coarse_tokens = prepare_coarse_out(x_coarse_in, x_coarse_history)
             coarse_tokens = np.array(coarse_tokens)
             x_coarse_gen = coarse_tokens[:, previous_coarse_size:]
-            previous_coarse_size = coarse_tokens.shape[1]
-            assert (
-                    isinstance(x_coarse_gen, np.ndarray)
-                    and len(x_coarse_gen.shape) == 2
-                    and 1 <= x_coarse_gen.shape[0] <= N_FINE_CODEBOOKS - 1
-                    and x_coarse_gen.shape[1] > 0
-                    and x_coarse_gen.min() >= 0
-                    and x_coarse_gen.max() <= CODEBOOK_SIZE - 1
-            )
-            if history_prompt is not None:
-                history_prompt = _load_history_prompt(history_prompt)
-                x_fine_history = history_prompt["fine_prompt"]
-                assert (
-                        isinstance(x_fine_history, np.ndarray)
-                        and len(x_fine_history.shape) == 2
-                        and x_fine_history.shape[0] == N_FINE_CODEBOOKS
-                        and x_fine_history.shape[1] >= 0
-                        and x_fine_history.min() >= 0
-                        and x_fine_history.max() <= CODEBOOK_SIZE - 1
-                )
-            else:
-                x_fine_history = None
-            n_coarse = x_coarse_gen.shape[0]
+            # from here
 
-            # make input arr
-            in_arr = np.vstack(
-                [
-                    x_coarse_gen,
-                    np.zeros((N_FINE_CODEBOOKS - n_coarse, x_coarse_gen.shape[1]))
-                    + CODEBOOK_SIZE,  # padding
-                ]
-            ).astype(np.int32)
-            # prepend history if available (max 512)
-            if x_fine_history is not None:
-                x_fine_history = x_fine_history.astype(np.int32)
-                in_arr = np.hstack(
-                    [
-                        x_fine_history[:, -512:].astype(np.int32),
-                        in_arr,
-                    ]
-                )
-                n_history = x_fine_history[:, -512:].shape[1]
-            else:
-                n_history = 0
-            n_remove_from_end = 0
-            # need to pad if too short (since non-causal model)
-            if in_arr.shape[1] < 1024:
-                n_remove_from_end = 1024 - in_arr.shape[1]
-                in_arr = np.hstack(
-                    [
-                        in_arr,
-                        np.zeros((N_FINE_CODEBOOKS, n_remove_from_end), dtype=np.int32) + CODEBOOK_SIZE,
-                    ]
-                )
-            # we can be lazy about fractional loop and just keep overwriting codebooks
-            n_loops = np.max([0, int(np.ceil((x_coarse_gen.shape[1] - (1024 - n_history)) / 512))]) + 1
-            in_arr = torch.tensor(in_arr.T).to(device)
-            for n in tqdm.tqdm(range(n_loops), disable=silent, desc="generate_fine"):
-                start_idx = np.min([n * 512, in_arr.shape[0] - 1024])
-                start_fill_idx = np.min([n_history + n * 512, in_arr.shape[0] - 512])
-                rel_start_fill_idx = start_fill_idx - start_idx
-                in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
-                for nn in range(n_coarse, N_FINE_CODEBOOKS):
-                    logits = fine_model(nn, in_buffer)
-                    if temp is None:
-                        relevant_logits = logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
-                        codebook_preds = torch.argmax(relevant_logits, -1)
-                    else:
-                        relevant_logits = logits[0, :, :CODEBOOK_SIZE] / temp
-                        probs = F.softmax(relevant_logits, dim=-1)
-                        # multinomial bugged on mps: shuttle to cpu if necessary
-                        inf_device = probs.device
-                        if probs.device.type == "mps":
-                            probs = probs.to("cpu")
-                        codebook_preds = torch.hstack(
-                            [
-                                torch.multinomial(probs[nnn], num_samples=1).to(inf_device)
-                                for nnn in range(rel_start_fill_idx, 1024)
-                            ]
-                        )
-                    in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
-                    del logits, codebook_preds
-                # transfer over info into model_in and convert to numpy
-                for nn in range(n_coarse, N_FINE_CODEBOOKS):
-                    in_arr[
-                    start_fill_idx: start_fill_idx + (1024 - rel_start_fill_idx), nn
-                    ] = in_buffer[0, rel_start_fill_idx:, nn]
-                del in_buffer
-            gen_fine_arr = in_arr.detach().cpu().numpy().squeeze().T
-            del in_arr
 
-            if OFFLOAD_CPU:
-                fine_model.to("cpu")
-            gen_fine_arr = gen_fine_arr[:, n_history:]
-            if n_remove_from_end > 0:
-                gen_fine_arr = gen_fine_arr[:, :-n_remove_from_end]
-            assert gen_fine_arr.shape[-1] == x_coarse_gen.shape[-1]
-            _clear_cuda_cache()
+            # previous_coarse_size = coarse_tokens.shape[1]
+            # assert (
+            #         isinstance(x_coarse_gen, np.ndarray)
+            #         and len(x_coarse_gen.shape) == 2
+            #         and 1 <= x_coarse_gen.shape[0] <= N_FINE_CODEBOOKS - 1
+            #         and x_coarse_gen.shape[1] > 0
+            #         and x_coarse_gen.min() >= 0
+            #         and x_coarse_gen.max() <= CODEBOOK_SIZE - 1
+            # )
+            # if history_prompt is not None:
+            #     history_prompt = _load_history_prompt(history_prompt)
+            #     x_fine_history = history_prompt["fine_prompt"]
+            #     assert (
+            #             isinstance(x_fine_history, np.ndarray)
+            #             and len(x_fine_history.shape) == 2
+            #             and x_fine_history.shape[0] == N_FINE_CODEBOOKS
+            #             and x_fine_history.shape[1] >= 0
+            #             and x_fine_history.min() >= 0
+            #             and x_fine_history.max() <= CODEBOOK_SIZE - 1
+            #     )
+            # else:
+            #     x_fine_history = None
+            # n_coarse = x_coarse_gen.shape[0]
+            #
+            # # make input arr
+            # in_arr = np.vstack(
+            #     [
+            #         x_coarse_gen,
+            #         np.zeros((N_FINE_CODEBOOKS - n_coarse, x_coarse_gen.shape[1]))
+            #         + CODEBOOK_SIZE,  # padding
+            #     ]
+            # ).astype(np.int32)
+            # # prepend history if available (max 512)
+            # if x_fine_history is not None:
+            #     x_fine_history = x_fine_history.astype(np.int32)
+            #     in_arr = np.hstack(
+            #         [
+            #             x_fine_history[:, -512:].astype(np.int32),
+            #             in_arr,
+            #         ]
+            #     )
+            #     n_history = x_fine_history[:, -512:].shape[1]
+            # else:
+            #     n_history = 0
+            # n_remove_from_end = 0
+            # # need to pad if too short (since non-causal model)
+            # if in_arr.shape[1] < 1024:
+            #     n_remove_from_end = 1024 - in_arr.shape[1]
+            #     in_arr = np.hstack(
+            #         [
+            #             in_arr,
+            #             np.zeros((N_FINE_CODEBOOKS, n_remove_from_end), dtype=np.int32) + CODEBOOK_SIZE,
+            #         ]
+            #     )
+            # # we can be lazy about fractional loop and just keep overwriting codebooks
+            # n_loops = np.max([0, int(np.ceil((x_coarse_gen.shape[1] - (1024 - n_history)) / 512))]) + 1
+            # in_arr = torch.tensor(in_arr.T).to(device)
+            # for n in tqdm.tqdm(range(n_loops), disable=silent, desc="generate_fine"):
+            #     start_idx = np.min([n * 512, in_arr.shape[0] - 1024])
+            #     start_fill_idx = np.min([n_history + n * 512, in_arr.shape[0] - 512])
+            #     rel_start_fill_idx = start_fill_idx - start_idx
+            #     in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
+            #     for nn in range(n_coarse, N_FINE_CODEBOOKS):
+            #         logits = fine_model(nn, in_buffer)
+            #         if temp is None:
+            #             relevant_logits = logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
+            #             codebook_preds = torch.argmax(relevant_logits, -1)
+            #         else:
+            #             relevant_logits = logits[0, :, :CODEBOOK_SIZE] / temp
+            #             probs = F.softmax(relevant_logits, dim=-1)
+            #             # multinomial bugged on mps: shuttle to cpu if necessary
+            #             inf_device = probs.device
+            #             if probs.device.type == "mps":
+            #                 probs = probs.to("cpu")
+            #             codebook_preds = torch.hstack(
+            #                 [
+            #                     torch.multinomial(probs[nnn], num_samples=1).to(inf_device)
+            #                     for nnn in range(rel_start_fill_idx, 1024)
+            #                 ]
+            #             )
+            #         in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
+            #         del logits, codebook_preds
+            #     # transfer over info into model_in and convert to numpy
+            #     for nn in range(n_coarse, N_FINE_CODEBOOKS):
+            #         in_arr[
+            #         start_fill_idx: start_fill_idx + (1024 - rel_start_fill_idx), nn
+            #         ] = in_buffer[0, rel_start_fill_idx:, nn]
+            #     del in_buffer
+            # gen_fine_arr = in_arr.detach().cpu().numpy().squeeze().T
+            # del in_arr
+            #
+            # if OFFLOAD_CPU:
+            #     fine_model.to("cpu")
+            # gen_fine_arr = gen_fine_arr[:, n_history:]
+            # if n_remove_from_end > 0:
+            #     gen_fine_arr = gen_fine_arr[:, :-n_remove_from_end]
+            # assert gen_fine_arr.shape[-1] == x_coarse_gen.shape[-1]
+            # _clear_cuda_cache()
+
+
+
             # yield gen_fine_arr
             yield []
 
