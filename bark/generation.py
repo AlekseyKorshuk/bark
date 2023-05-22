@@ -1234,22 +1234,22 @@ def generate_stream_combined(
                 in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
                 for nn in range(n_coarse, N_FINE_CODEBOOKS):
                     fine_logits = fine_model(nn, in_buffer)
-                    if temp is None:
-                        fine_relevant_logits = fine_logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
-                        codebook_preds = torch.argmax(fine_relevant_logits, -1)
-                    else:
-                        relevant_logits = fine_logits[0, :, :CODEBOOK_SIZE] / temp
-                        fine_probs = F.softmax(relevant_logits, dim=-1)
-                        # multinomial bugged on mps: shuttle to cpu if necessary
-                        inf_device = fine_probs.device
-                        if fine_probs.device.type == "mps":
-                            fine_probs = fine_probs.to("cpu")
-                        codebook_preds = torch.hstack(
-                            [
-                                torch.multinomial(fine_probs[nnn], num_samples=1).to(inf_device)
-                                for nnn in range(rel_start_fill_idx, 1024)
-                            ]
-                        )
+                    # if temp is None:
+                    #     fine_relevant_logits = fine_logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
+                    #     codebook_preds = torch.argmax(fine_relevant_logits, -1)
+                    # else:
+                    #     relevant_logits = fine_logits[0, :, :CODEBOOK_SIZE] / temp
+                    #     fine_probs = F.softmax(relevant_logits, dim=-1)
+                    #     # multinomial bugged on mps: shuttle to cpu if necessary
+                    #     inf_device = fine_probs.device
+                    #     if fine_probs.device.type == "mps":
+                    #         fine_probs = fine_probs.to("cpu")
+                    #     codebook_preds = torch.hstack(
+                    #         [
+                    #             torch.multinomial(fine_probs[nnn], num_samples=1).to(inf_device)
+                    #             for nnn in range(rel_start_fill_idx, 1024)
+                    #         ]
+                    #     )
                     # in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
                     # del fine_logits, codebook_preds
                 # transfer over info into model_in and convert to numpy
