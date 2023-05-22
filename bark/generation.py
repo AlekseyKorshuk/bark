@@ -725,10 +725,10 @@ def generate_fine(
     global models_devices
     if "fine" not in models:
         preload_models()
-    model = models["fine"]
+    fine_model = models["fine"]
     if OFFLOAD_CPU:
-        model.to(models_devices["fine"])
-    device = next(model.parameters()).device
+        fine_model.to(models_devices["fine"])
+    device = next(fine_model.parameters()).device
     # make input arr
     in_arr = np.vstack(
         [
@@ -769,7 +769,7 @@ def generate_fine(
         rel_start_fill_idx = start_fill_idx - start_idx
         in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
         for nn in range(n_coarse, N_FINE_CODEBOOKS):
-            logits = model(nn, in_buffer)
+            logits = fine_model(nn, in_buffer)
             if temp is None:
                 relevant_logits = logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
                 codebook_preds = torch.argmax(relevant_logits, -1)
@@ -798,7 +798,7 @@ def generate_fine(
     del in_arr
 
     if OFFLOAD_CPU:
-        model.to("cpu")
+        fine_model.to("cpu")
     gen_fine_arr = gen_fine_arr[:, n_history:]
     if n_remove_from_end > 0:
         gen_fine_arr = gen_fine_arr[:, :-n_remove_from_end]
