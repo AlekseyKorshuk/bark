@@ -158,7 +158,7 @@ def generate_audio_stream(
             temp=0.5,
         )
         batch_fine_tokens = np.array(batch_fine_tokens)
-        fine_tokens_cropped = batch_fine_tokens[:, previous_fine_size]
+        fine_tokens_cropped = batch_fine_tokens[:, previous_fine_size:]
         previous_fine_size = fine_tokens_cropped.shape[1]
         audio_arr = codec_decode(fine_tokens_cropped)
         if output_full:
