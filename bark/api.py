@@ -143,7 +143,7 @@ def generate_audio_stream(
         temp=text_temp,
         silent=silent,
     )
-    previous_fine_size = 0
+    previous_coarse_size = 0
     for coarse_tokens in generate_coarse_stream(
             x_semantic,
             history_prompt=history_prompt,
@@ -152,20 +152,20 @@ def generate_audio_stream(
             use_kv_caching=True,
             sliding_window_len=sliding_window_len
     ):
+        coarse_tokens = np.array(coarse_tokens)
+        coarse_tokens_cropped = coarse_tokens[:, previous_coarse_size:]
+        previous_coarse_size = coarse_tokens.shape[1]
         batch_fine_tokens = generate_fine(
-            coarse_tokens,
+            coarse_tokens_cropped,
             history_prompt=history_prompt,
             temp=0.5,
         )
-        batch_fine_tokens = np.array(batch_fine_tokens)
-        fine_tokens_cropped = batch_fine_tokens[:, previous_fine_size:]
-        previous_fine_size = fine_tokens_cropped.shape[1]
-        audio_arr = codec_decode(fine_tokens_cropped)
+        audio_arr = codec_decode(batch_fine_tokens)
         if output_full:
             full_generation = {
                 "semantic_prompt": x_semantic,
                 "coarse_tokens": coarse_tokens,
-                "fine_tokens_cropped": fine_tokens_cropped,
+                "coarse_tokens_cropped": coarse_tokens_cropped,
                 "batch_fine_tokens": batch_fine_tokens,
             }
             yield full_generation, audio_arr
