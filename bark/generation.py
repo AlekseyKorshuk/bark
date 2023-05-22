@@ -1232,26 +1232,26 @@ def generate_stream_combined(
                 start_fill_idx = np.min([n_history + n * 512, in_arr.shape[0] - 512])
                 rel_start_fill_idx = start_fill_idx - start_idx
                 in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
-                for nn in range(n_coarse, N_FINE_CODEBOOKS):
-                    logits = fine_model(nn, in_buffer)
-                    if temp is None:
-                        relevant_logits = logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
-                        codebook_preds = torch.argmax(relevant_logits, -1)
-                    else:
-                        relevant_logits = logits[0, :, :CODEBOOK_SIZE] / temp
-                        probs = F.softmax(relevant_logits, dim=-1)
-                        # multinomial bugged on mps: shuttle to cpu if necessary
-                        inf_device = probs.device
-                        if probs.device.type == "mps":
-                            probs = probs.to("cpu")
-                        codebook_preds = torch.hstack(
-                            [
-                                torch.multinomial(probs[nnn], num_samples=1).to(inf_device)
-                                for nnn in range(rel_start_fill_idx, 1024)
-                            ]
-                        )
-                    in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
-                    del logits, codebook_preds
+                # for nn in range(n_coarse, N_FINE_CODEBOOKS):
+                #     logits = fine_model(nn, in_buffer)
+                #     if temp is None:
+                #         relevant_logits = logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
+                #         codebook_preds = torch.argmax(relevant_logits, -1)
+                #     else:
+                #         relevant_logits = logits[0, :, :CODEBOOK_SIZE] / temp
+                #         probs = F.softmax(relevant_logits, dim=-1)
+                #         # multinomial bugged on mps: shuttle to cpu if necessary
+                #         inf_device = probs.device
+                #         if probs.device.type == "mps":
+                #             probs = probs.to("cpu")
+                #         codebook_preds = torch.hstack(
+                #             [
+                #                 torch.multinomial(probs[nnn], num_samples=1).to(inf_device)
+                #                 for nnn in range(rel_start_fill_idx, 1024)
+                #             ]
+                #         )
+                #     in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
+                #     del logits, codebook_preds
                 # transfer over info into model_in and convert to numpy
                 # for nn in range(n_coarse, N_FINE_CODEBOOKS):
                 #     in_arr[
