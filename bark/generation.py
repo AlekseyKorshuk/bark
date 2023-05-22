@@ -1167,7 +1167,6 @@ def generate_stream_combined(
             coarse_tokens = prepare_coarse_out(x_coarse_in, x_coarse_history)
             coarse_tokens = np.array(coarse_tokens)
             x_coarse_gen = coarse_tokens[:, previous_coarse_size:]
-            print("x_in before:", x_in)
             previous_coarse_size = coarse_tokens.shape[1]
             assert (
                     isinstance(x_coarse_gen, np.ndarray)
@@ -1266,7 +1265,8 @@ def generate_stream_combined(
                 gen_fine_arr = gen_fine_arr[:, :-n_remove_from_end]
             assert gen_fine_arr.shape[-1] == x_coarse_gen.shape[-1]
             _clear_cuda_cache()
-            yield gen_fine_arr
+            # yield gen_fine_arr
+            yield []
 
     del x_semantic_in
     _clear_cuda_cache()

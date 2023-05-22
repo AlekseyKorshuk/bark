@@ -212,7 +212,7 @@ def generate_audio_stream_combined(
             # else:
             #     yield audio_arr
 
-    audio_arr = codec_decode(batch_fine_tokens)
+    # audio_arr = codec_decode(batch_fine_tokens)
     if output_full:
         full_generation = {
             "semantic_prompt": x_semantic,
@@ -220,6 +220,6 @@ def generate_audio_stream_combined(
             # "coarse_tokens_cropped": coarse_tokens_cropped,
             "batch_fine_tokens": batch_fine_tokens,
         }
-        yield full_generation, audio_arr
+        yield full_generation, []
     else:
-        yield audio_arr
+        yield []
