@@ -58,7 +58,7 @@ def semantic_to_waveform(
         history_prompt=history_prompt,
         temp=temp,
         silent=silent,
-        use_kv_caching=False
+        use_kv_caching=True
     )
     print("coarse_tokens from baseline", coarse_tokens)
     fine_tokens = generate_fine(
@@ -150,7 +150,7 @@ def generate_audio_stream(
                 history_prompt=history_prompt,
                 temp=waveform_temp,
                 silent=silent,
-                use_kv_caching=False,
+                use_kv_caching=True,
                 sliding_window_len=sliding_window_len
         ):
             coarse_tokens = np.array(coarse_tokens)

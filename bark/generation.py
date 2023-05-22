@@ -988,8 +988,8 @@ def generate_coarse_stream(
         del x_in
         if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
             print(x_coarse_in)
-            x_coarse_in_copy = x_coarse_in.detach().clone()
-            gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history)
+            # x_coarse_in_copy = x_coarse_in
+            gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in, x_coarse_history)
             yield np.copy(gen_coarse_audio_arr)
 
     del x_semantic_in
@@ -997,7 +997,7 @@ def generate_coarse_stream(
 
 
 def prepare_coarse_out(x_coarse_in, x_coarse_history):
-    np_x_coarse_in = x_coarse_in.detach().cpu().numpy().squeeze()
+    np_x_coarse_in = x_coarse_in.cpu().numpy().squeeze()
     gen_coarse_arr = np_x_coarse_in[len(x_coarse_history):]
     gen_coarse_audio_arr = gen_coarse_arr.reshape(-1, N_COARSE_CODEBOOKS).T - SEMANTIC_VOCAB_SIZE
     for n in range(1, N_COARSE_CODEBOOKS):
