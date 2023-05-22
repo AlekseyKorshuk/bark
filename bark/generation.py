@@ -725,10 +725,10 @@ def generate_fine(
     global models_devices
     if "fine" not in models:
         preload_models()
-    fine_model = models["fine"]
+    model = models["fine"]
     if OFFLOAD_CPU:
-        fine_model.to(models_devices["fine"])
-    device = next(fine_model.parameters()).device
+        model.to(models_devices["fine"])
+    device = next(model.parameters()).device
     # make input arr
     in_arr = np.vstack(
         [
@@ -769,7 +769,7 @@ def generate_fine(
         rel_start_fill_idx = start_fill_idx - start_idx
         in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
         for nn in range(n_coarse, N_FINE_CODEBOOKS):
-            logits = fine_model(nn, in_buffer)
+            logits = model(nn, in_buffer)
             if temp is None:
                 relevant_logits = logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
                 codebook_preds = torch.argmax(relevant_logits, -1)
@@ -798,7 +798,7 @@ def generate_fine(
     del in_arr
 
     if OFFLOAD_CPU:
-        fine_model.to("cpu")
+        model.to("cpu")
     gen_fine_arr = gen_fine_arr[:, n_history:]
     if n_remove_from_end > 0:
         gen_fine_arr = gen_fine_arr[:, :-n_remove_from_end]
@@ -988,10 +988,8 @@ def generate_coarse_stream(
         del x_in
         if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
             print(x_coarse_in)
-            print("before:", x_coarse_in)
             x_coarse_in_copy = x_coarse_in.detach().clone()
             gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history)
-            print("after:", x_coarse_in)
             yield np.copy(gen_coarse_audio_arr)
 
     del x_semantic_in
