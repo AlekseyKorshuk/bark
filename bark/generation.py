@@ -1253,11 +1253,11 @@ def generate_stream_combined(
                     in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
                     del logits, codebook_preds
                 # transfer over info into model_in and convert to numpy
-                for nn in range(n_coarse, N_FINE_CODEBOOKS):
-                    in_arr[
-                    start_fill_idx: start_fill_idx + (1024 - rel_start_fill_idx), nn
-                    ] = in_buffer[0, rel_start_fill_idx:, nn]
-                del in_buffer
+                # for nn in range(n_coarse, N_FINE_CODEBOOKS):
+                #     in_arr[
+                #     start_fill_idx: start_fill_idx + (1024 - rel_start_fill_idx), nn
+                #     ] = in_buffer[0, rel_start_fill_idx:, nn]
+                # del in_buffer
             # gen_fine_arr = in_arr.detach().cpu().numpy().squeeze().T
             # del in_arr
             #
