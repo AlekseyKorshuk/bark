@@ -1190,10 +1190,10 @@ def generate_stream_combined(
             global models_devices
             if "fine" not in models:
                 preload_models()
-            model = models["fine"]
+            fine_model = models["fine"]
             if OFFLOAD_CPU:
-                model.to(models_devices["fine"])
-            device = next(model.parameters()).device
+                fine_model.to(models_devices["fine"])
+            device = next(fine_model.parameters()).device
             # make input arr
             in_arr = np.vstack(
                 [
@@ -1226,7 +1226,6 @@ def generate_stream_combined(
                 )
             # we can be lazy about fractional loop and just keep overwriting codebooks
             n_loops = np.max([0, int(np.ceil((x_coarse_gen.shape[1] - (1024 - n_history)) / 512))]) + 1
-            # with _inference_mode():
             in_arr = torch.tensor(in_arr.T).to(device)
             for n in tqdm.tqdm(range(n_loops), disable=silent, desc="generate_fine"):
                 start_idx = np.min([n * 512, in_arr.shape[0] - 1024])
@@ -1234,7 +1233,7 @@ def generate_stream_combined(
                 rel_start_fill_idx = start_fill_idx - start_idx
                 in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
                 for nn in range(n_coarse, N_FINE_CODEBOOKS):
-                    logits = model(nn, in_buffer)
+                    logits = fine_model(nn, in_buffer)
                     if temp is None:
                         relevant_logits = logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
                         codebook_preds = torch.argmax(relevant_logits, -1)
@@ -1263,7 +1262,7 @@ def generate_stream_combined(
             del in_arr
 
             if OFFLOAD_CPU:
-                model.to("cpu")
+                fine_model.to("cpu")
             gen_fine_arr = gen_fine_arr[:, n_history:]
             if n_remove_from_end > 0:
                 gen_fine_arr = gen_fine_arr[:, :-n_remove_from_end]
