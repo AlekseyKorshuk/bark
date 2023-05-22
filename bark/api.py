@@ -153,22 +153,30 @@ def generate_audio_stream(
                 use_kv_caching=True,
                 sliding_window_len=sliding_window_len
         ):
-            coarse_tokens = np.array(coarse_tokens)
-            coarse_tokens_cropped = coarse_tokens[:, previous_coarse_size:]
-            previous_coarse_size = coarse_tokens.shape[1]
-            batch_fine_tokens = generate_fine(
-                coarse_tokens_cropped,
-                history_prompt=history_prompt,
-                temp=0.5,
-            )
-            audio_arr = codec_decode(batch_fine_tokens)
-            if output_full:
-                full_generation = {
-                    "semantic_prompt": x_semantic,
-                    "coarse_tokens": coarse_tokens,
-                    "coarse_tokens_cropped": coarse_tokens_cropped,
-                    "batch_fine_tokens": batch_fine_tokens,
-                }
-                yield full_generation, audio_arr
-            else:
-                yield audio_arr
+            pass
+            # coarse_tokens = np.array(coarse_tokens)
+            # coarse_tokens_cropped = coarse_tokens[:, previous_coarse_size:]
+            # previous_coarse_size = coarse_tokens.shape[1]
+            # batch_fine_tokens = generate_fine(
+            #     coarse_tokens_cropped,
+            #     history_prompt=history_prompt,
+            #     temp=0.5,
+            # )
+            # audio_arr = codec_decode(batch_fine_tokens)
+            # if output_full:
+            #     full_generation = {
+            #         "semantic_prompt": x_semantic,
+            #         "coarse_tokens": coarse_tokens,
+            #         "coarse_tokens_cropped": coarse_tokens_cropped,
+            #         "batch_fine_tokens": batch_fine_tokens,
+            #     }
+            #     yield full_generation, audio_arr
+            # else:
+            #     yield audio_arr
+        full_generation = {
+            "semantic_prompt": x_semantic,
+            "coarse_tokens": coarse_tokens,
+            # "coarse_tokens_cropped": coarse_tokens_cropped,
+            # "batch_fine_tokens": batch_fine_tokens,
+        }
+        yield full_generation, []
