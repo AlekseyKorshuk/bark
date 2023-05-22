@@ -199,14 +199,27 @@ def generate_audio_stream_combined(
                 use_kv_caching=True,
                 sliding_window_len=sliding_window_len
         ):
-            audio_arr = codec_decode(batch_fine_tokens)
-            if output_full:
-                full_generation = {
-                    "semantic_prompt": x_semantic,
-                    # "coarse_tokens": coarse_tokens,
-                    # "coarse_tokens_cropped": coarse_tokens_cropped,
-                    "batch_fine_tokens": batch_fine_tokens,
-                }
-                yield full_generation, audio_arr
-            else:
-                yield audio_arr
+            pass
+            # audio_arr = codec_decode(batch_fine_tokens)
+            # if output_full:
+            #     full_generation = {
+            #         "semantic_prompt": x_semantic,
+            #         # "coarse_tokens": coarse_tokens,
+            #         # "coarse_tokens_cropped": coarse_tokens_cropped,
+            #         "batch_fine_tokens": batch_fine_tokens,
+            #     }
+            #     yield full_generation, audio_arr
+            # else:
+            #     yield audio_arr
+
+    audio_arr = codec_decode(batch_fine_tokens)
+    if output_full:
+        full_generation = {
+            "semantic_prompt": x_semantic,
+            # "coarse_tokens": coarse_tokens,
+            # "coarse_tokens_cropped": coarse_tokens_cropped,
+            "batch_fine_tokens": batch_fine_tokens,
+        }
+        yield full_generation, audio_arr
+    else:
+        yield audio_arr

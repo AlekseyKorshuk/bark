@@ -1167,6 +1167,7 @@ def generate_stream_combined(
             coarse_tokens = prepare_coarse_out(x_coarse_in, x_coarse_history)
             coarse_tokens = np.array(coarse_tokens)
             x_coarse_gen = coarse_tokens[:, previous_coarse_size:]
+            print("x_in before:", x_in)
             previous_coarse_size = coarse_tokens.shape[1]
             assert (
                     isinstance(x_coarse_gen, np.ndarray)
