@@ -1239,11 +1239,11 @@ def generate_stream_combined(
                         codebook_preds = torch.argmax(fine_relevant_logits, -1)
                     else:
                         relevant_logits = fine_logits[0, :, :CODEBOOK_SIZE] / temp
-                        # fine_probs = F.softmax(relevant_logits, dim=-1)
-                        # # multinomial bugged on mps: shuttle to cpu if necessary
-                        # inf_device = fine_probs.device
-                        # if fine_probs.device.type == "mps":
-                        #     fine_probs = fine_probs.to("cpu")
+                        fine_probs = F.softmax(relevant_logits, dim=-1)
+                        # multinomial bugged on mps: shuttle to cpu if necessary
+                        inf_device = fine_probs.device
+                        if fine_probs.device.type == "mps":
+                            fine_probs = fine_probs.to("cpu")
                         # codebook_preds = torch.hstack(
                         #     [
                         #         torch.multinomial(fine_probs[nnn], num_samples=1).to(inf_device)
