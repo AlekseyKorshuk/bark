@@ -169,9 +169,10 @@ def _inference_mode():
 
 
 def _clear_cuda_cache():
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
+    pass
+    # if torch.cuda.is_available():
+    #     torch.cuda.empty_cache()
+    #     torch.cuda.synchronize()
 
 
 def clean_models(model_key=None):
