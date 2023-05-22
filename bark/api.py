@@ -4,7 +4,7 @@ import numpy as np
 from scipy.io.wavfile import write as write_wav
 
 from .generation import codec_decode, generate_coarse, generate_fine, generate_text_semantic, \
-    SAMPLE_RATE, generate_coarse_stream, _inference_mode
+    SAMPLE_RATE, generate_coarse_stream, _inference_mode, generate_stream_combined
 
 
 def text_to_semantic(
@@ -167,6 +167,44 @@ def generate_audio_stream(
                     "semantic_prompt": x_semantic,
                     "coarse_tokens": coarse_tokens,
                     "coarse_tokens_cropped": coarse_tokens_cropped,
+                    "batch_fine_tokens": batch_fine_tokens,
+                }
+                yield full_generation, audio_arr
+            else:
+                yield audio_arr
+
+
+def generate_audio_stream_combined(
+        text: str,
+        history_prompt: Optional[Union[Dict, str]] = None,
+        text_temp: float = 0.7,
+        waveform_temp: float = 0.7,
+        silent: bool = False,
+        output_full: bool = False,
+        sliding_window_len: int = 60
+):
+    with _inference_mode():
+        x_semantic = text_to_semantic(
+            text,
+            history_prompt=history_prompt,
+            temp=text_temp,
+            silent=silent,
+        )
+        # previous_coarse_size = 0
+        for batch_fine_tokens in generate_stream_combined(
+                x_semantic,
+                history_prompt=history_prompt,
+                temp=waveform_temp,
+                silent=silent,
+                use_kv_caching=True,
+                sliding_window_len=sliding_window_len
+        ):
+            audio_arr = codec_decode(batch_fine_tokens)
+            if output_full:
+                full_generation = {
+                    "semantic_prompt": x_semantic,
+                    # "coarse_tokens": coarse_tokens,
+                    # "coarse_tokens_cropped": coarse_tokens_cropped,
                     "batch_fine_tokens": batch_fine_tokens,
                 }
                 yield full_generation, audio_arr
