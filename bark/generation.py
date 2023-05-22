@@ -990,7 +990,7 @@ def generate_coarse_stream(
                 x_coarse_in_copy = x_coarse_in.detach().clone()
                 gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history)
                 print("after:", x_coarse_in)
-                yield gen_coarse_audio_arr
+                yield np.copy(gen_coarse_audio_arr)
 
         del x_semantic_in
     _clear_cuda_cache()
