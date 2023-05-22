@@ -985,13 +985,14 @@ def generate_coarse_stream(
                 del logits, relevant_logits, probs, item_next
                 n_step += 1
             del x_in
-            if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0 and not skip_first:
+            if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
                 print(x_coarse_in)
                 print("before:", x_coarse_in)
                 x_coarse_in_copy = x_coarse_in.detach().clone()
                 gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history)
                 print("after:", x_coarse_in)
-                yield np.copy(gen_coarse_audio_arr)
+                if not skip_first:
+                    yield np.copy(gen_coarse_audio_arr)
             skip_first = False
 
         del x_semantic_in
