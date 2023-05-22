@@ -1227,11 +1227,11 @@ def generate_stream_combined(
             # we can be lazy about fractional loop and just keep overwriting codebooks
             n_loops = np.max([0, int(np.ceil((x_coarse_gen.shape[1] - (1024 - n_history)) / 512))]) + 1
             in_arr = torch.tensor(in_arr.T).to(device)
-            # for n in tqdm.tqdm(range(n_loops), disable=silent, desc="generate_fine"):
-            #     start_idx = np.min([n * 512, in_arr.shape[0] - 1024])
-            #     start_fill_idx = np.min([n_history + n * 512, in_arr.shape[0] - 512])
-            #     rel_start_fill_idx = start_fill_idx - start_idx
-            #     in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
+            for n in tqdm.tqdm(range(n_loops), disable=silent, desc="generate_fine"):
+                start_idx = np.min([n * 512, in_arr.shape[0] - 1024])
+                start_fill_idx = np.min([n_history + n * 512, in_arr.shape[0] - 512])
+                rel_start_fill_idx = start_fill_idx - start_idx
+                in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
             #     for nn in range(n_coarse, N_FINE_CODEBOOKS):
             #         logits = fine_model(nn, in_buffer)
             #         if temp is None:
