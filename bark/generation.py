@@ -1170,63 +1170,63 @@ def generate_stream_combined(
             # from here
 
 
-            # previous_coarse_size = coarse_tokens.shape[1]
-            # assert (
-            #         isinstance(x_coarse_gen, np.ndarray)
-            #         and len(x_coarse_gen.shape) == 2
-            #         and 1 <= x_coarse_gen.shape[0] <= N_FINE_CODEBOOKS - 1
-            #         and x_coarse_gen.shape[1] > 0
-            #         and x_coarse_gen.min() >= 0
-            #         and x_coarse_gen.max() <= CODEBOOK_SIZE - 1
-            # )
-            # if history_prompt is not None:
-            #     history_prompt = _load_history_prompt(history_prompt)
-            #     x_fine_history = history_prompt["fine_prompt"]
-            #     assert (
-            #             isinstance(x_fine_history, np.ndarray)
-            #             and len(x_fine_history.shape) == 2
-            #             and x_fine_history.shape[0] == N_FINE_CODEBOOKS
-            #             and x_fine_history.shape[1] >= 0
-            #             and x_fine_history.min() >= 0
-            #             and x_fine_history.max() <= CODEBOOK_SIZE - 1
-            #     )
-            # else:
-            #     x_fine_history = None
-            # n_coarse = x_coarse_gen.shape[0]
-            #
-            # # make input arr
-            # in_arr = np.vstack(
-            #     [
-            #         x_coarse_gen,
-            #         np.zeros((N_FINE_CODEBOOKS - n_coarse, x_coarse_gen.shape[1]))
-            #         + CODEBOOK_SIZE,  # padding
-            #     ]
-            # ).astype(np.int32)
-            # # prepend history if available (max 512)
-            # if x_fine_history is not None:
-            #     x_fine_history = x_fine_history.astype(np.int32)
-            #     in_arr = np.hstack(
-            #         [
-            #             x_fine_history[:, -512:].astype(np.int32),
-            #             in_arr,
-            #         ]
-            #     )
-            #     n_history = x_fine_history[:, -512:].shape[1]
-            # else:
-            #     n_history = 0
-            # n_remove_from_end = 0
-            # # need to pad if too short (since non-causal model)
-            # if in_arr.shape[1] < 1024:
-            #     n_remove_from_end = 1024 - in_arr.shape[1]
-            #     in_arr = np.hstack(
-            #         [
-            #             in_arr,
-            #             np.zeros((N_FINE_CODEBOOKS, n_remove_from_end), dtype=np.int32) + CODEBOOK_SIZE,
-            #         ]
-            #     )
-            # # we can be lazy about fractional loop and just keep overwriting codebooks
-            # n_loops = np.max([0, int(np.ceil((x_coarse_gen.shape[1] - (1024 - n_history)) / 512))]) + 1
-            # in_arr = torch.tensor(in_arr.T).to(device)
+            previous_coarse_size = coarse_tokens.shape[1]
+            assert (
+                    isinstance(x_coarse_gen, np.ndarray)
+                    and len(x_coarse_gen.shape) == 2
+                    and 1 <= x_coarse_gen.shape[0] <= N_FINE_CODEBOOKS - 1
+                    and x_coarse_gen.shape[1] > 0
+                    and x_coarse_gen.min() >= 0
+                    and x_coarse_gen.max() <= CODEBOOK_SIZE - 1
+            )
+            if history_prompt is not None:
+                history_prompt = _load_history_prompt(history_prompt)
+                x_fine_history = history_prompt["fine_prompt"]
+                assert (
+                        isinstance(x_fine_history, np.ndarray)
+                        and len(x_fine_history.shape) == 2
+                        and x_fine_history.shape[0] == N_FINE_CODEBOOKS
+                        and x_fine_history.shape[1] >= 0
+                        and x_fine_history.min() >= 0
+                        and x_fine_history.max() <= CODEBOOK_SIZE - 1
+                )
+            else:
+                x_fine_history = None
+            n_coarse = x_coarse_gen.shape[0]
+
+            # make input arr
+            in_arr = np.vstack(
+                [
+                    x_coarse_gen,
+                    np.zeros((N_FINE_CODEBOOKS - n_coarse, x_coarse_gen.shape[1]))
+                    + CODEBOOK_SIZE,  # padding
+                ]
+            ).astype(np.int32)
+            # prepend history if available (max 512)
+            if x_fine_history is not None:
+                x_fine_history = x_fine_history.astype(np.int32)
+                in_arr = np.hstack(
+                    [
+                        x_fine_history[:, -512:].astype(np.int32),
+                        in_arr,
+                    ]
+                )
+                n_history = x_fine_history[:, -512:].shape[1]
+            else:
+                n_history = 0
+            n_remove_from_end = 0
+            # need to pad if too short (since non-causal model)
+            if in_arr.shape[1] < 1024:
+                n_remove_from_end = 1024 - in_arr.shape[1]
+                in_arr = np.hstack(
+                    [
+                        in_arr,
+                        np.zeros((N_FINE_CODEBOOKS, n_remove_from_end), dtype=np.int32) + CODEBOOK_SIZE,
+                    ]
+                )
+            # we can be lazy about fractional loop and just keep overwriting codebooks
+            n_loops = np.max([0, int(np.ceil((x_coarse_gen.shape[1] - (1024 - n_history)) / 512))]) + 1
+            in_arr = torch.tensor(in_arr.T).to(device)
             # for n in tqdm.tqdm(range(n_loops), disable=silent, desc="generate_fine"):
             #     start_idx = np.min([n * 512, in_arr.shape[0] - 1024])
             #     start_fill_idx = np.min([n_history + n * 512, in_arr.shape[0] - 512])
