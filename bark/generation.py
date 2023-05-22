@@ -1243,12 +1243,12 @@ def generate_stream_combined(
                         inf_device = fine_probs.device
                         if fine_probs.device.type == "mps":
                             fine_probs = fine_probs.to("cpu")
-                        codebook_preds = torch.hstack(
-                            [
-                                torch.multinomial(fine_probs[nnn].clone(), num_samples=1).to(inf_device)
-                                for nnn in range(rel_start_fill_idx, 1024)
-                            ]
-                        )
+                        codebook_preds = []
+                        for nnn in range(rel_start_fill_idx, 1024):
+                            codebook_preds.append(
+                                torch.multinomial(fine_probs[nnn], num_samples=1).to(inf_device)
+                            )
+                        # codebook_preds = torch.hstack(codebook_preds)
                     # in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
                     # del fine_logits, codebook_preds
                 # transfer over info into model_in and convert to numpy
