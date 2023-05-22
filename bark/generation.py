@@ -1072,7 +1072,12 @@ def generate_stream_combined(
     model = models["coarse"]
     if OFFLOAD_CPU:
         model.to(models_devices["coarse"])
-    device = next(model.parameters()).device
+    if "fine" not in models:
+        preload_models()
+    fine_model = models["fine"]
+    if OFFLOAD_CPU:
+        fine_model.to(models_devices["fine"])
+    device = next(fine_model.parameters()).device
     # start loop
     n_steps = int(
         round(
@@ -1185,15 +1190,7 @@ def generate_stream_combined(
             else:
                 x_fine_history = None
             n_coarse = x_coarse_gen.shape[0]
-            # load models if not yet exist
-            global models
-            global models_devices
-            if "fine" not in models:
-                preload_models()
-            fine_model = models["fine"]
-            if OFFLOAD_CPU:
-                fine_model.to(models_devices["fine"])
-            device = next(fine_model.parameters()).device
+
             # make input arr
             in_arr = np.vstack(
                 [
