@@ -1233,7 +1233,7 @@ def generate_stream_combined(
                 in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
                 for nn in range(n_coarse, N_FINE_CODEBOOKS):
                     fine_logits = fine_model(nn, in_buffer)
-                    if temp is None:
+                    if temp is None or True:
                         fine_relevant_logits = fine_logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
                         codebook_preds = torch.argmax(fine_relevant_logits, -1)
                     else:
