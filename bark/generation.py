@@ -913,87 +913,87 @@ def generate_coarse_stream(
     x_semantic = np.hstack([x_semantic_history, x_semantic]).astype(np.int32)
     x_coarse = x_coarse_history.astype(np.int32)
     base_semantic_idx = len(x_semantic_history)
-    with None:
-        x_semantic_in = torch.from_numpy(x_semantic)[None].to(device)
-        x_coarse_in = torch.from_numpy(x_coarse)[None].to(device)
-        n_window_steps = int(np.ceil(n_steps / sliding_window_len))
-        n_step = 0
-        for _ in tqdm.tqdm(range(n_window_steps), total=n_window_steps, disable=silent):
-            semantic_idx = base_semantic_idx + int(round(n_step / semantic_to_coarse_ratio))
-            # pad from right side
-            x_in = x_semantic_in[:, np.max([0, semantic_idx - max_semantic_history]):]
-            x_in = x_in[:, :256]
-            x_in = F.pad(
+    # with _inference_mode():
+    x_semantic_in = torch.from_numpy(x_semantic)[None].to(device)
+    x_coarse_in = torch.from_numpy(x_coarse)[None].to(device)
+    n_window_steps = int(np.ceil(n_steps / sliding_window_len))
+    n_step = 0
+    for _ in tqdm.tqdm(range(n_window_steps), total=n_window_steps, disable=silent):
+        semantic_idx = base_semantic_idx + int(round(n_step / semantic_to_coarse_ratio))
+        # pad from right side
+        x_in = x_semantic_in[:, np.max([0, semantic_idx - max_semantic_history]):]
+        x_in = x_in[:, :256]
+        x_in = F.pad(
+            x_in,
+            (0, 256 - x_in.shape[-1]),
+            "constant",
+            COARSE_SEMANTIC_PAD_TOKEN,
+        )
+        x_in = torch.hstack(
+            [
                 x_in,
-                (0, 256 - x_in.shape[-1]),
-                "constant",
-                COARSE_SEMANTIC_PAD_TOKEN,
+                torch.tensor([COARSE_INFER_TOKEN])[None].to(device),
+                x_coarse_in[:, -max_coarse_history:],
+            ]
+        )
+        kv_cache = None
+        for _ in range(sliding_window_len):
+            if n_step >= n_steps:
+                continue
+            is_major_step = n_step % N_COARSE_CODEBOOKS == 0
+
+            if use_kv_caching and kv_cache is not None:
+                x_input = x_in[:, [-1]]
+            else:
+                x_input = x_in
+
+            logits, kv_cache = model(x_input, use_cache=use_kv_caching, past_kv=kv_cache)
+            logit_start_idx = (
+                    SEMANTIC_VOCAB_SIZE + (1 - int(is_major_step)) * CODEBOOK_SIZE
             )
-            x_in = torch.hstack(
-                [
-                    x_in,
-                    torch.tensor([COARSE_INFER_TOKEN])[None].to(device),
-                    x_coarse_in[:, -max_coarse_history:],
-                ]
+            logit_end_idx = (
+                    SEMANTIC_VOCAB_SIZE + (2 - int(is_major_step)) * CODEBOOK_SIZE
             )
-            kv_cache = None
-            for _ in range(sliding_window_len):
-                if n_step >= n_steps:
-                    continue
-                is_major_step = n_step % N_COARSE_CODEBOOKS == 0
+            relevant_logits = logits[0, 0, logit_start_idx:logit_end_idx]
+            if top_p is not None:
+                # faster to convert to numpy
+                original_device = relevant_logits.device
+                relevant_logits = relevant_logits.detach().cpu().type(torch.float32).numpy()
+                sorted_indices = np.argsort(relevant_logits)[::-1]
+                sorted_logits = relevant_logits[sorted_indices]
+                cumulative_probs = np.cumsum(softmax(sorted_logits))
+                sorted_indices_to_remove = cumulative_probs > top_p
+                sorted_indices_to_remove[1:] = sorted_indices_to_remove[:-1].copy()
+                sorted_indices_to_remove[0] = False
+                relevant_logits[sorted_indices[sorted_indices_to_remove]] = -np.inf
+                relevant_logits = torch.from_numpy(relevant_logits)
+                relevant_logits = relevant_logits.to(original_device)
+            if top_k is not None:
+                v, _ = torch.topk(relevant_logits, min(top_k, relevant_logits.size(-1)))
+                relevant_logits[relevant_logits < v[-1]] = -float("Inf")
+            probs = F.softmax(relevant_logits / temp, dim=-1)
+            # multinomial bugged on mps: shuttle to cpu if necessary
+            inf_device = probs.device
+            if probs.device.type == "mps":
+                probs = probs.to("cpu")
+            item_next = torch.multinomial(probs, num_samples=1)
+            probs = probs.to(inf_device)
+            item_next = item_next.to(inf_device)
+            item_next += logit_start_idx
+            x_coarse_in = torch.cat((x_coarse_in, item_next[None]), dim=1)
+            x_in = torch.cat((x_in, item_next[None]), dim=1)
+            del logits, relevant_logits, probs, item_next
+            n_step += 1
+        del x_in
+        if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
+            print(x_coarse_in)
+            print("before:", x_coarse_in)
+            x_coarse_in_copy = x_coarse_in.detach().clone()
+            gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history)
+            print("after:", x_coarse_in)
+            yield np.copy(gen_coarse_audio_arr)
 
-                if use_kv_caching and kv_cache is not None:
-                    x_input = x_in[:, [-1]]
-                else:
-                    x_input = x_in
-
-                logits, kv_cache = model(x_input, use_cache=use_kv_caching, past_kv=kv_cache)
-                logit_start_idx = (
-                        SEMANTIC_VOCAB_SIZE + (1 - int(is_major_step)) * CODEBOOK_SIZE
-                )
-                logit_end_idx = (
-                        SEMANTIC_VOCAB_SIZE + (2 - int(is_major_step)) * CODEBOOK_SIZE
-                )
-                relevant_logits = logits[0, 0, logit_start_idx:logit_end_idx]
-                if top_p is not None:
-                    # faster to convert to numpy
-                    original_device = relevant_logits.device
-                    relevant_logits = relevant_logits.detach().cpu().type(torch.float32).numpy()
-                    sorted_indices = np.argsort(relevant_logits)[::-1]
-                    sorted_logits = relevant_logits[sorted_indices]
-                    cumulative_probs = np.cumsum(softmax(sorted_logits))
-                    sorted_indices_to_remove = cumulative_probs > top_p
-                    sorted_indices_to_remove[1:] = sorted_indices_to_remove[:-1].copy()
-                    sorted_indices_to_remove[0] = False
-                    relevant_logits[sorted_indices[sorted_indices_to_remove]] = -np.inf
-                    relevant_logits = torch.from_numpy(relevant_logits)
-                    relevant_logits = relevant_logits.to(original_device)
-                if top_k is not None:
-                    v, _ = torch.topk(relevant_logits, min(top_k, relevant_logits.size(-1)))
-                    relevant_logits[relevant_logits < v[-1]] = -float("Inf")
-                probs = F.softmax(relevant_logits / temp, dim=-1)
-                # multinomial bugged on mps: shuttle to cpu if necessary
-                inf_device = probs.device
-                if probs.device.type == "mps":
-                    probs = probs.to("cpu")
-                item_next = torch.multinomial(probs, num_samples=1)
-                probs = probs.to(inf_device)
-                item_next = item_next.to(inf_device)
-                item_next += logit_start_idx
-                x_coarse_in = torch.cat((x_coarse_in, item_next[None]), dim=1)
-                x_in = torch.cat((x_in, item_next[None]), dim=1)
-                del logits, relevant_logits, probs, item_next
-                n_step += 1
-            del x_in
-            if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
-                print(x_coarse_in)
-                print("before:", x_coarse_in)
-                x_coarse_in_copy = x_coarse_in.detach().clone()
-                gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history)
-                print("after:", x_coarse_in)
-                yield np.copy(gen_coarse_audio_arr)
-
-        del x_semantic_in
+    del x_semantic_in
     _clear_cuda_cache()
 
 
