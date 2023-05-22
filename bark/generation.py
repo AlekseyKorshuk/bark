@@ -912,6 +912,7 @@ def generate_coarse_stream(
     x_semantic = np.hstack([x_semantic_history, x_semantic]).astype(np.int32)
     x_coarse = x_coarse_history.astype(np.int32)
     base_semantic_idx = len(x_semantic_history)
+    skip_first = True
     with _inference_mode():
         x_semantic_in = torch.from_numpy(x_semantic)[None].to(device)
         x_coarse_in = torch.from_numpy(x_coarse)[None].to(device)
@@ -984,13 +985,14 @@ def generate_coarse_stream(
                 del logits, relevant_logits, probs, item_next
                 n_step += 1
             del x_in
-            if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0:
+            if len(x_coarse_in[0]) % N_COARSE_CODEBOOKS == 0 and not skip_first:
                 print(x_coarse_in)
                 print("before:", x_coarse_in)
                 x_coarse_in_copy = x_coarse_in.detach().clone()
                 gen_coarse_audio_arr = prepare_coarse_out(x_coarse_in_copy, x_coarse_history)
                 print("after:", x_coarse_in)
                 yield np.copy(gen_coarse_audio_arr)
+            skip_first = False
 
         del x_semantic_in
     _clear_cuda_cache()
