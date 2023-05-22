@@ -1250,8 +1250,8 @@ def generate_stream_combined(
                                 for nnn in range(rel_start_fill_idx, 1024)
                             ]
                         )
-                    in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
-                    del fine_logits, codebook_preds
+                    # in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
+                    # del fine_logits, codebook_preds
                 # transfer over info into model_in and convert to numpy
                 # for nn in range(n_coarse, N_FINE_CODEBOOKS):
                 #     in_arr[
