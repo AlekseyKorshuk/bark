@@ -1246,7 +1246,9 @@ def generate_stream_combined(
                         codebook_preds = []
                         for nnn in range(rel_start_fill_idx, 1024):
                             f_probs = fine_probs[nnn].detach()
+                            print("f_probs", f_probs)
                             f_probs_mult = torch.multinomial(f_probs, num_samples=1)
+                            print("f_probs_mult", f_probs_mult)
                             # f_probs_mult = f_probs_mult.to(inf_device)
                             # codebook_preds.append(f_probs_mult)
                         # codebook_preds = torch.hstack(codebook_preds)
