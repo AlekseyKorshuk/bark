@@ -782,7 +782,7 @@ def generate_fine(
                     probs = probs.to("cpu")
                 codebook_preds = torch.hstack(
                     [
-                        torch.multinomial(probs[nnn], num_samples=1).to(inf_device)
+                        torch.multinomial(probs[nnn].detach().cpu(), num_samples=1).to(inf_device)
                         for nnn in range(rel_start_fill_idx, 1024)
                     ]
                 )
