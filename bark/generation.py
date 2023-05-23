@@ -1233,7 +1233,7 @@ def generate_stream_combined(
                 in_buffer = in_arr[start_idx: start_idx + 1024, :][None]
                 for nn in range(n_coarse, N_FINE_CODEBOOKS):
                     fine_logits = fine_model(nn, in_buffer)
-                    if temp is None or True:
+                    if temp is None:
                         fine_relevant_logits = fine_logits[0, rel_start_fill_idx:, :CODEBOOK_SIZE]
                         codebook_preds = torch.argmax(fine_relevant_logits, -1)
                     else:
@@ -1246,7 +1246,7 @@ def generate_stream_combined(
                         codebook_preds = []
                         for nnn in range(rel_start_fill_idx, 1024):
                             codebook_preds.append(
-                                torch.multinomial(fine_probs[nnn], num_samples=1).to(inf_device)
+                                torch.multinomial(fine_probs[nnn].detach(), num_samples=1).to(inf_device)
                             )
                         # codebook_preds = torch.hstack(codebook_preds)
                     # in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
