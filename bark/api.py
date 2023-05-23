@@ -137,7 +137,7 @@ def generate_audio_stream(
         output_full: bool = False,
         sliding_window_len: int = 60
 ):
-    silence_length = 2
+    silence_length = int(sliding_window_len * 0.1)
     silence = np.array([[475] * silence_length, [424] * silence_length])
     with _inference_mode():
         x_semantic = text_to_semantic(
