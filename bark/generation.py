@@ -1245,9 +1245,10 @@ def generate_stream_combined(
                             fine_probs = fine_probs.to("cpu")
                         codebook_preds = []
                         for nnn in range(rel_start_fill_idx, 1024):
-                            codebook_preds.append(
-                                torch.multinomial(fine_probs[nnn].detach(), num_samples=1).to(inf_device)
-                            )
+                            f_probs = fine_probs[nnn].detach()
+                            # f_probs_mult = torch.multinomial(f_probs, num_samples=1)
+                            # f_probs_mult = f_probs_mult.to(inf_device)
+                            # codebook_preds.append(f_probs_mult)
                         # codebook_preds = torch.hstack(codebook_preds)
                     # in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
                     # del fine_logits, codebook_preds
