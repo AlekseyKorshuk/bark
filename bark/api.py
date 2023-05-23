@@ -137,6 +137,8 @@ def generate_audio_stream(
         output_full: bool = False,
         sliding_window_len: int = 60
 ):
+    silence_length = 2
+    silence = np.array([[475] * silence_length, [424] * silence_length])
     with _inference_mode():
         x_semantic = text_to_semantic(
             text,
@@ -156,11 +158,13 @@ def generate_audio_stream(
             coarse_tokens = np.array(coarse_tokens)
             coarse_tokens_cropped = coarse_tokens[:, previous_coarse_size:]
             previous_coarse_size = coarse_tokens.shape[1]
+            coarse_tokens_with_silence = np.concatenate([silence, coarse_tokens_cropped, silence], axis=1)
             batch_fine_tokens = generate_fine(
-                coarse_tokens_cropped,
+                coarse_tokens_with_silence,
                 history_prompt=history_prompt,
                 temp=0.5,
             )
+            batch_fine_tokens = batch_fine_tokens[:, silence_length:-silence_length]
             audio_arr = codec_decode(batch_fine_tokens)
             if output_full:
                 full_generation = {
