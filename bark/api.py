@@ -164,7 +164,7 @@ def generate_audio_stream(
                 history_prompt=history_prompt,
                 temp=0.5,
             )
-            batch_fine_tokens = batch_fine_tokens[:, silence_length - 1: -silence_length + 1]
+            batch_fine_tokens = batch_fine_tokens[:, silence_length: -silence_length]
             audio_arr = codec_decode(batch_fine_tokens)
             if output_full:
                 full_generation = {
