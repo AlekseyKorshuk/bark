@@ -1,15 +1,17 @@
 from typing import Dict, Optional, Union
 
 import numpy as np
+from scipy.io.wavfile import write as write_wav
 
-from .generation import codec_decode, generate_coarse, generate_fine, generate_text_semantic
+from .generation import codec_decode, generate_coarse, generate_fine, generate_text_semantic, \
+    SAMPLE_RATE, generate_coarse_stream, _inference_mode, generate_stream_combined
 
 
 def text_to_semantic(
-    text: str,
-    history_prompt: Optional[Union[Dict, str]] = None,
-    temp: float = 0.7,
-    silent: bool = False,
+        text: str,
+        history_prompt: Optional[Union[Dict, str]] = None,
+        temp: float = 0.7,
+        silent: bool = False,
 ):
     """Generate semantic array from text.
 
@@ -33,11 +35,11 @@ def text_to_semantic(
 
 
 def semantic_to_waveform(
-    semantic_tokens: np.ndarray,
-    history_prompt: Optional[Union[Dict, str]] = None,
-    temp: float = 0.7,
-    silent: bool = False,
-    output_full: bool = False,
+        semantic_tokens: np.ndarray,
+        history_prompt: Optional[Union[Dict, str]] = None,
+        temp: float = 0.7,
+        silent: bool = False,
+        output_full: bool = False,
 ):
     """Generate audio array from semantic input.
 
@@ -58,6 +60,7 @@ def semantic_to_waveform(
         silent=silent,
         use_kv_caching=True
     )
+    print("coarse_tokens from baseline", coarse_tokens)
     fine_tokens = generate_fine(
         coarse_tokens,
         history_prompt=history_prompt,
@@ -75,21 +78,21 @@ def semantic_to_waveform(
 
 
 def save_as_prompt(filepath, full_generation):
-    assert(filepath.endswith(".npz"))
-    assert(isinstance(full_generation, dict))
-    assert("semantic_prompt" in full_generation)
-    assert("coarse_prompt" in full_generation)
-    assert("fine_prompt" in full_generation)
+    assert (filepath.endswith(".npz"))
+    assert (isinstance(full_generation, dict))
+    assert ("semantic_prompt" in full_generation)
+    assert ("coarse_prompt" in full_generation)
+    assert ("fine_prompt" in full_generation)
     np.savez(filepath, **full_generation)
 
 
 def generate_audio(
-    text: str,
-    history_prompt: Optional[Union[Dict, str]] = None,
-    text_temp: float = 0.7,
-    waveform_temp: float = 0.7,
-    silent: bool = False,
-    output_full: bool = False,
+        text: str,
+        history_prompt: Optional[Union[Dict, str]] = None,
+        text_temp: float = 0.7,
+        waveform_temp: float = 0.7,
+        silent: bool = False,
+        output_full: bool = False,
 ):
     """Generate audio array from input text.
 
@@ -123,3 +126,104 @@ def generate_audio(
     else:
         audio_arr = out
     return audio_arr
+
+
+def generate_audio_stream(
+        text: str,
+        history_prompt: Optional[Union[Dict, str]] = None,
+        text_temp: float = 0.7,
+        waveform_temp: float = 0.7,
+        silent: bool = False,
+        output_full: bool = False,
+        sliding_window_len: int = 60
+):
+    silence_length = int(sliding_window_len * 0.1)
+    silence = np.array([[475] * silence_length, [424] * silence_length])
+    with _inference_mode():
+        x_semantic = text_to_semantic(
+            text,
+            history_prompt=history_prompt,
+            temp=text_temp,
+            silent=silent,
+        )
+        previous_coarse_size = 0
+        for coarse_tokens in generate_coarse_stream(
+                x_semantic,
+                history_prompt=history_prompt,
+                temp=waveform_temp,
+                silent=silent,
+                use_kv_caching=True,
+                sliding_window_len=sliding_window_len
+        ):
+            coarse_tokens = np.array(coarse_tokens)
+            coarse_tokens_cropped = coarse_tokens[:, previous_coarse_size:]
+            previous_coarse_size = coarse_tokens.shape[1]
+            coarse_tokens_with_silence = np.concatenate([silence, coarse_tokens_cropped, silence], axis=1)
+            batch_fine_tokens = generate_fine(
+                coarse_tokens_with_silence,
+                history_prompt=history_prompt,
+                temp=0.5,
+            )
+            batch_fine_tokens = batch_fine_tokens[:, silence_length:-silence_length]
+            audio_arr = codec_decode(batch_fine_tokens)
+            if output_full:
+                full_generation = {
+                    "semantic_prompt": x_semantic,
+                    "coarse_tokens": coarse_tokens,
+                    "coarse_tokens_cropped": coarse_tokens_cropped,
+                    "batch_fine_tokens": batch_fine_tokens,
+                }
+                yield full_generation, audio_arr
+            else:
+                yield audio_arr
+
+
+def generate_audio_stream_combined(
+        text: str,
+        history_prompt: Optional[Union[Dict, str]] = None,
+        text_temp: float = 0.7,
+        waveform_temp: float = 0.7,
+        silent: bool = False,
+        output_full: bool = False,
+        sliding_window_len: int = 60
+):
+    with _inference_mode():
+        x_semantic = text_to_semantic(
+            text,
+            history_prompt=history_prompt,
+            temp=text_temp,
+            silent=silent,
+        )
+        # previous_coarse_size = 0
+        for batch_fine_tokens in generate_stream_combined(
+                x_semantic,
+                history_prompt=history_prompt,
+                temp=waveform_temp,
+                silent=silent,
+                use_kv_caching=True,
+                sliding_window_len=sliding_window_len
+        ):
+            pass
+            # audio_arr = codec_decode(batch_fine_tokens)
+            # if output_full:
+            #     full_generation = {
+            #         "semantic_prompt": x_semantic,
+            #         # "coarse_tokens": coarse_tokens,
+            #         # "coarse_tokens_cropped": coarse_tokens_cropped,
+            #         "batch_fine_tokens": batch_fine_tokens,
+            #     }
+            #     yield full_generation, audio_arr
+            # else:
+            #     yield audio_arr
+
+    # audio_arr = codec_decode(batch_fine_tokens)
+    if output_full:
+        full_generation = {
+            "semantic_prompt": x_semantic,
+            # "coarse_tokens": coarse_tokens,
+            # "coarse_tokens_cropped": coarse_tokens_cropped,
+            "batch_fine_tokens": batch_fine_tokens,
+        }
+        yield full_generation, []
+    else:
+        yield []
