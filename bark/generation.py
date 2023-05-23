@@ -1249,9 +1249,9 @@ def generate_stream_combined(
                             # print("f_probs", f_probs)
                             f_probs_mult = torch.multinomial(f_probs, num_samples=1)
                             # print("f_probs_mult", f_probs_mult)
-                            # f_probs_mult = f_probs_mult.to(inf_device)
-                            # codebook_preds.append(f_probs_mult)
-                        # codebook_preds = torch.hstack(codebook_preds)
+                            f_probs_mult = f_probs_mult.to(inf_device)
+                            codebook_preds.append(f_probs_mult)
+                        codebook_preds = torch.hstack(codebook_preds)
                     # in_buffer[0, rel_start_fill_idx:, nn] = codebook_preds
                     # del fine_logits, codebook_preds
                 # transfer over info into model_in and convert to numpy
